@@ -1,0 +1,789 @@
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 1
+
+
+   1              		.cpu cortex-m4
+   2              		.arch armv7e-m
+   3              		.fpu fpv4-sp-d16
+   4              		.eabi_attribute 27, 1
+   5              		.eabi_attribute 28, 1
+   6              		.eabi_attribute 20, 1
+   7              		.eabi_attribute 21, 1
+   8              		.eabi_attribute 23, 3
+   9              		.eabi_attribute 24, 1
+  10              		.eabi_attribute 25, 1
+  11              		.eabi_attribute 26, 1
+  12              		.eabi_attribute 30, 1
+  13              		.eabi_attribute 34, 1
+  14              		.eabi_attribute 18, 4
+  15              		.file	"adc.c"
+  16              		.text
+  17              	.Ltext0:
+  18              		.cfi_sections	.debug_frame
+  19              		.file 1 "Core/Src/adc.c"
+  20              		.section	.text.Sensor_Init,"ax",%progbits
+  21              		.align	1
+  22              		.global	Sensor_Init
+  23              		.syntax unified
+  24              		.thumb
+  25              		.thumb_func
+  27              	Sensor_Init:
+  28              	.LFB123:
+   1:Core/Src/adc.c **** #include "adc.h"
+   2:Core/Src/adc.c **** #include "power.h" // 需要访问 g_ctrl
+   3:Core/Src/adc.c **** #include <math.h>         // 需要 logf 计算温度
+   4:Core/Src/adc.c **** #include "main.h"         // 需要 HAL_GPIO_TogglePin 定义
+   5:Core/Src/adc.c **** 
+   6:Core/Src/adc.c **** // 静态滤波变量 (放在这里，别人看不见，很安全)
+   7:Core/Src/adc.c **** static float va_filter = 0.0f;
+   8:Core/Src/adc.c **** static float ia_filter = 0.0f;
+   9:Core/Src/adc.c **** static float ir_filter = 0.0f;
+  10:Core/Src/adc.c **** static float ib_filter = 0.0f;
+  11:Core/Src/adc.c **** static float vb_filter = 0.0f;
+  12:Core/Src/adc.c **** static float tem_filter = 0.0f;
+  13:Core/Src/adc.c **** static uint8_t is_first = 0;
+  14:Core/Src/adc.c **** 
+  15:Core/Src/adc.c **** // 初始化函数 (上电调用一次，避免刚开机数据为0导致的冲击)
+  16:Core/Src/adc.c **** void Sensor_Init(void) {
+  29              		.loc 1 16 24 view -0
+  30              		.cfi_startproc
+  31              		@ args = 0, pretend = 0, frame = 0
+  32              		@ frame_needed = 0, uses_anonymous_args = 0
+  33              		@ link register save eliminated.
+  17:Core/Src/adc.c ****     is_first = 0;
+  34              		.loc 1 17 5 view .LVU1
+  35              		.loc 1 17 14 is_stmt 0 view .LVU2
+  36 0000 084B     		ldr	r3, .L2
+  37 0002 0022     		movs	r2, #0
+  38 0004 1A70     		strb	r2, [r3]
+  18:Core/Src/adc.c ****     va_filter = 0.0f;
+  39              		.loc 1 18 5 is_stmt 1 view .LVU3
+  40              		.loc 1 18 15 is_stmt 0 view .LVU4
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 2
+
+
+  41 0006 0023     		movs	r3, #0
+  42 0008 074A     		ldr	r2, .L2+4
+  43 000a 1360     		str	r3, [r2]	@ float
+  19:Core/Src/adc.c ****     ia_filter = 0.0f;
+  44              		.loc 1 19 5 is_stmt 1 view .LVU5
+  45              		.loc 1 19 15 is_stmt 0 view .LVU6
+  46 000c 074A     		ldr	r2, .L2+8
+  47 000e 1360     		str	r3, [r2]	@ float
+  20:Core/Src/adc.c ****     ir_filter = 0.0f;
+  48              		.loc 1 20 5 is_stmt 1 view .LVU7
+  49              		.loc 1 20 15 is_stmt 0 view .LVU8
+  50 0010 074A     		ldr	r2, .L2+12
+  51 0012 1360     		str	r3, [r2]	@ float
+  21:Core/Src/adc.c ****     ib_filter = 0.0f;
+  52              		.loc 1 21 5 is_stmt 1 view .LVU9
+  53              		.loc 1 21 15 is_stmt 0 view .LVU10
+  54 0014 074A     		ldr	r2, .L2+16
+  55 0016 1360     		str	r3, [r2]	@ float
+  22:Core/Src/adc.c ****     vb_filter = 0.0f;
+  56              		.loc 1 22 5 is_stmt 1 view .LVU11
+  57              		.loc 1 22 15 is_stmt 0 view .LVU12
+  58 0018 074A     		ldr	r2, .L2+20
+  59 001a 1360     		str	r3, [r2]	@ float
+  23:Core/Src/adc.c ****     tem_filter = 0.0f;
+  60              		.loc 1 23 5 is_stmt 1 view .LVU13
+  61              		.loc 1 23 16 is_stmt 0 view .LVU14
+  62 001c 074A     		ldr	r2, .L2+24
+  63 001e 1360     		str	r3, [r2]	@ float
+  24:Core/Src/adc.c **** }
+  64              		.loc 1 24 1 view .LVU15
+  65 0020 7047     		bx	lr
+  66              	.L3:
+  67 0022 00BF     		.align	2
+  68              	.L2:
+  69 0024 00000000 		.word	is_first
+  70 0028 00000000 		.word	va_filter
+  71 002c 00000000 		.word	ia_filter
+  72 0030 00000000 		.word	ir_filter
+  73 0034 00000000 		.word	ib_filter
+  74 0038 00000000 		.word	vb_filter
+  75 003c 00000000 		.word	tem_filter
+  76              		.cfi_endproc
+  77              	.LFE123:
+  79              		.section	.text.Sensor_Update,"ax",%progbits
+  80              		.align	1
+  81              		.global	Sensor_Update
+  82              		.syntax unified
+  83              		.thumb
+  84              		.thumb_func
+  86              	Sensor_Update:
+  87              	.LFB124:
+  25:Core/Src/adc.c **** 
+  26:Core/Src/adc.c **** // 核心更新函数
+  27:Core/Src/adc.c **** void Sensor_Update(void) {
+  88              		.loc 1 27 26 is_stmt 1 view -0
+  89              		.cfi_startproc
+  90              		@ args = 0, pretend = 0, frame = 0
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 3
+
+
+  91              		@ frame_needed = 0, uses_anonymous_args = 0
+  92 0000 2DE9F041 		push	{r4, r5, r6, r7, r8, lr}
+  93              	.LCFI0:
+  94              		.cfi_def_cfa_offset 24
+  95              		.cfi_offset 4, -24
+  96              		.cfi_offset 5, -20
+  97              		.cfi_offset 6, -16
+  98              		.cfi_offset 7, -12
+  99              		.cfi_offset 8, -8
+ 100              		.cfi_offset 14, -4
+  28:Core/Src/adc.c **** uint32_t sum_va = 0;
+ 101              		.loc 1 28 1 view .LVU17
+ 102              	.LVL0:
+  29:Core/Src/adc.c ****     uint32_t sum_ia = 0;
+ 103              		.loc 1 29 5 view .LVU18
+  30:Core/Src/adc.c ****     uint32_t sum_ir = 0;
+ 104              		.loc 1 30 5 view .LVU19
+  31:Core/Src/adc.c ****     uint32_t sum_ib = 0;
+ 105              		.loc 1 31 5 view .LVU20
+  32:Core/Src/adc.c ****     uint32_t sum_vb = 0;
+ 106              		.loc 1 32 5 view .LVU21
+  33:Core/Src/adc.c ****     uint32_t sum_ntc = 0;
+ 107              		.loc 1 33 5 view .LVU22
+  34:Core/Src/adc.c **** for (int i = 0; i < OVER_SAMPLE_CNT; i++) {
+ 108              		.loc 1 34 1 view .LVU23
+ 109              	.LBB2:
+ 110              		.loc 1 34 6 view .LVU24
+ 111              		.loc 1 34 10 is_stmt 0 view .LVU25
+ 112 0004 0023     		movs	r3, #0
+ 113              	.LBE2:
+  33:Core/Src/adc.c ****     uint32_t sum_ntc = 0;
+ 114              		.loc 1 33 14 view .LVU26
+ 115 0006 1D46     		mov	r5, r3
+  32:Core/Src/adc.c ****     uint32_t sum_vb = 0;
+ 116              		.loc 1 32 14 view .LVU27
+ 117 0008 1846     		mov	r0, r3
+  31:Core/Src/adc.c ****     uint32_t sum_vb = 0;
+ 118              		.loc 1 31 14 view .LVU28
+ 119 000a 9E46     		mov	lr, r3
+  30:Core/Src/adc.c ****     uint32_t sum_ib = 0;
+ 120              		.loc 1 30 14 view .LVU29
+ 121 000c 9C46     		mov	ip, r3
+  29:Core/Src/adc.c ****     uint32_t sum_ir = 0;
+ 122              		.loc 1 29 14 view .LVU30
+ 123 000e 1E46     		mov	r6, r3
+  28:Core/Src/adc.c ****     uint32_t sum_ia = 0;
+ 124              		.loc 1 28 10 view .LVU31
+ 125 0010 1C46     		mov	r4, r3
+ 126              	.LBB4:
+ 127              		.loc 1 34 1 view .LVU32
+ 128 0012 19E0     		b	.L5
+ 129              	.LVL1:
+ 130              	.L6:
+ 131              	.LBB3:
+  35:Core/Src/adc.c ****         // 计算当前组在 buffer 中的起始偏移量
+  36:Core/Src/adc.c ****         // 数据排列: [Ch1, Ch2, Ch3, Ch1, Ch2, Ch3 ...]
+  37:Core/Src/adc.c ****         int offset = i * ADC_CH_NUM;
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 4
+
+
+ 132              		.loc 1 37 9 is_stmt 1 view .LVU33
+ 133              		.loc 1 37 13 is_stmt 0 view .LVU34
+ 134 0014 03EB4302 		add	r2, r3, r3, lsl #1
+ 135              	.LVL2:
+  38:Core/Src/adc.c **** 
+  39:Core/Src/adc.c ****         // ADC1 数据累加
+  40:Core/Src/adc.c ****         sum_va += adc_buffer1[offset + 0];
+ 136              		.loc 1 40 9 is_stmt 1 view .LVU35
+ 137              		.loc 1 40 30 is_stmt 0 view .LVU36
+ 138 0018 9049     		ldr	r1, .L19
+ 139 001a 51F82270 		ldr	r7, [r1, r2, lsl #2]
+ 140              		.loc 1 40 16 view .LVU37
+ 141 001e 3C44     		add	r4, r4, r7
+ 142              	.LVL3:
+  41:Core/Src/adc.c ****         sum_ia += adc_buffer1[offset + 1];
+ 143              		.loc 1 41 9 is_stmt 1 view .LVU38
+ 144              		.loc 1 41 38 is_stmt 0 view .LVU39
+ 145 0020 02F10108 		add	r8, r2, #1
+ 146              		.loc 1 41 30 view .LVU40
+ 147 0024 51F82870 		ldr	r7, [r1, r8, lsl #2]
+ 148              		.loc 1 41 16 view .LVU41
+ 149 0028 3E44     		add	r6, r6, r7
+ 150              	.LVL4:
+  42:Core/Src/adc.c ****         sum_ir += adc_buffer1[offset + 2];
+ 151              		.loc 1 42 9 is_stmt 1 view .LVU42
+ 152              		.loc 1 42 38 is_stmt 0 view .LVU43
+ 153 002a 971C     		adds	r7, r2, #2
+ 154              		.loc 1 42 30 view .LVU44
+ 155 002c 51F82710 		ldr	r1, [r1, r7, lsl #2]
+ 156              		.loc 1 42 16 view .LVU45
+ 157 0030 8C44     		add	ip, ip, r1
+ 158              	.LVL5:
+  43:Core/Src/adc.c **** 
+  44:Core/Src/adc.c ****         // ADC2 数据累加
+  45:Core/Src/adc.c ****         sum_ib  += adc_buffer2[offset + 0];
+ 159              		.loc 1 45 9 is_stmt 1 view .LVU46
+ 160              		.loc 1 45 31 is_stmt 0 view .LVU47
+ 161 0032 8B49     		ldr	r1, .L19+4
+ 162 0034 51F82220 		ldr	r2, [r1, r2, lsl #2]
+ 163              	.LVL6:
+ 164              		.loc 1 45 17 view .LVU48
+ 165 0038 9644     		add	lr, lr, r2
+ 166              	.LVL7:
+  46:Core/Src/adc.c ****         sum_ntc += adc_buffer2[offset + 1];
+ 167              		.loc 1 46 9 is_stmt 1 view .LVU49
+ 168              		.loc 1 46 31 is_stmt 0 view .LVU50
+ 169 003a 51F82820 		ldr	r2, [r1, r8, lsl #2]
+ 170              		.loc 1 46 17 view .LVU51
+ 171 003e 1544     		add	r5, r5, r2
+ 172              	.LVL8:
+  47:Core/Src/adc.c ****         sum_vb  += adc_buffer2[offset + 2];
+ 173              		.loc 1 47 9 is_stmt 1 view .LVU52
+ 174              		.loc 1 47 31 is_stmt 0 view .LVU53
+ 175 0040 51F82720 		ldr	r2, [r1, r7, lsl #2]
+ 176              		.loc 1 47 17 view .LVU54
+ 177 0044 1044     		add	r0, r0, r2
+ 178              	.LVL9:
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 5
+
+
+ 179              		.loc 1 47 17 view .LVU55
+ 180              	.LBE3:
+  34:Core/Src/adc.c ****         // 计算当前组在 buffer 中的起始偏移量
+ 181              		.loc 1 34 39 is_stmt 1 discriminator 3 view .LVU56
+ 182 0046 0133     		adds	r3, r3, #1
+ 183              	.LVL10:
+ 184              	.L5:
+  34:Core/Src/adc.c ****         // 计算当前组在 buffer 中的起始偏移量
+ 185              		.loc 1 34 19 discriminator 1 view .LVU57
+ 186 0048 072B     		cmp	r3, #7
+ 187 004a E3DD     		ble	.L6
+ 188              	.LBE4:
+  48:Core/Src/adc.c ****     }
+  49:Core/Src/adc.c ****     float avg_va_raw = (float)(sum_va >> 3);
+ 189              		.loc 1 49 5 view .LVU58
+ 190              		.loc 1 49 39 is_stmt 0 view .LVU59
+ 191 004c E308     		lsrs	r3, r4, #3
+ 192              	.LVL11:
+ 193              		.loc 1 49 39 view .LVU60
+ 194 004e 06EE103A 		vmov	s12, r3	@ int
+ 195              		.loc 1 49 11 view .LVU61
+ 196 0052 B8EE466A 		vcvt.f32.u32	s12, s12
+ 197              	.LVL12:
+  50:Core/Src/adc.c ****     float avg_ia_raw = (float)(sum_ia >> 3);
+ 198              		.loc 1 50 5 is_stmt 1 view .LVU62
+ 199              		.loc 1 50 39 is_stmt 0 view .LVU63
+ 200 0056 F308     		lsrs	r3, r6, #3
+ 201 0058 05EE903A 		vmov	s11, r3	@ int
+ 202              		.loc 1 50 11 view .LVU64
+ 203 005c F8EE655A 		vcvt.f32.u32	s11, s11
+ 204              	.LVL13:
+  51:Core/Src/adc.c ****     float avg_ir_raw = (float)(sum_ir >> 3);
+ 205              		.loc 1 51 5 is_stmt 1 view .LVU65
+ 206              		.loc 1 51 39 is_stmt 0 view .LVU66
+ 207 0060 4FEADC03 		lsr	r3, ip, #3
+ 208 0064 07EE103A 		vmov	s14, r3	@ int
+ 209              		.loc 1 51 11 view .LVU67
+ 210 0068 B8EE477A 		vcvt.f32.u32	s14, s14
+ 211              	.LVL14:
+  52:Core/Src/adc.c ****     float avg_ib_raw = (float)(sum_ib >> 3);
+ 212              		.loc 1 52 5 is_stmt 1 view .LVU68
+ 213              		.loc 1 52 39 is_stmt 0 view .LVU69
+ 214 006c 4FEADE03 		lsr	r3, lr, #3
+ 215 0070 06EE903A 		vmov	s13, r3	@ int
+ 216              		.loc 1 52 11 view .LVU70
+ 217 0074 F8EE666A 		vcvt.f32.u32	s13, s13
+ 218              	.LVL15:
+  53:Core/Src/adc.c ****     float avg_vb_raw = (float)(sum_vb >> 3);
+ 219              		.loc 1 53 5 is_stmt 1 view .LVU71
+ 220              		.loc 1 53 39 is_stmt 0 view .LVU72
+ 221 0078 C308     		lsrs	r3, r0, #3
+ 222 007a 07EE903A 		vmov	s15, r3	@ int
+ 223              		.loc 1 53 11 view .LVU73
+ 224 007e F8EE677A 		vcvt.f32.u32	s15, s15
+ 225              	.LVL16:
+  54:Core/Src/adc.c ****     float avg_ntc_raw = (float)(sum_ntc >> 3);
+ 226              		.loc 1 54 5 is_stmt 1 view .LVU74
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 6
+
+
+ 227              		.loc 1 54 41 is_stmt 0 view .LVU75
+ 228 0082 ED08     		lsrs	r5, r5, #3
+ 229              	.LVL17:
+ 230              		.loc 1 54 11 view .LVU76
+ 231 0084 05EE105A 		vmov	s10, r5	@ int
+ 232 0088 B8EE455A 		vcvt.f32.u32	s10, s10
+ 233              	.LVL18:
+  55:Core/Src/adc.c ****     float va_raw = (float)avg_va_raw * ADC_TO_VOLT * GAIN_VOLTAGE + OFFSET_VOLTAGE;
+ 234              		.loc 1 55 5 is_stmt 1 view .LVU77
+ 235              		.loc 1 55 38 is_stmt 0 view .LVU78
+ 236 008c DFED754A 		vldr.32	s9, .L19+8
+ 237 0090 26EE246A 		vmul.f32	s12, s12, s9
+ 238              	.LVL19:
+ 239              		.loc 1 55 52 view .LVU79
+ 240 0094 9FED743A 		vldr.32	s6, .L19+12
+ 241 0098 26EE036A 		vmul.f32	s12, s12, s6
+ 242              		.loc 1 55 11 view .LVU80
+ 243 009c B6EE004A 		vmov.f32	s8, #5.0e-1
+ 244 00a0 36EE046A 		vadd.f32	s12, s12, s8
+ 245              	.LVL20:
+  56:Core/Src/adc.c ****     float ia_raw = (float)avg_ia_raw * ADC_TO_VOLT * GAIN_CURRENT - OFFSET_CURRENT_IA;
+ 246              		.loc 1 56 5 is_stmt 1 view .LVU81
+ 247              		.loc 1 56 38 is_stmt 0 view .LVU82
+ 248 00a4 65EEA45A 		vmul.f32	s11, s11, s9
+ 249              	.LVL21:
+ 250              		.loc 1 56 52 view .LVU83
+ 251 00a8 F3EE093A 		vmov.f32	s7, #2.5e+1
+ 252 00ac 65EEA35A 		vmul.f32	s11, s11, s7
+ 253              		.loc 1 56 11 view .LVU84
+ 254 00b0 9FED6E4A 		vldr.32	s8, .L19+16
+ 255 00b4 75EEC45A 		vsub.f32	s11, s11, s8
+ 256              	.LVL22:
+  57:Core/Src/adc.c ****     float ir_raw = (float)avg_ir_raw * ADC_TO_VOLT * GAIN_CURRENT - OFFSET_CURRENT_IR;
+ 257              		.loc 1 57 5 is_stmt 1 view .LVU85
+ 258              		.loc 1 57 38 is_stmt 0 view .LVU86
+ 259 00b8 27EE247A 		vmul.f32	s14, s14, s9
+ 260              	.LVL23:
+ 261              		.loc 1 57 52 view .LVU87
+ 262 00bc 27EE237A 		vmul.f32	s14, s14, s7
+ 263              		.loc 1 57 11 view .LVU88
+ 264 00c0 37EE447A 		vsub.f32	s14, s14, s8
+ 265              	.LVL24:
+  58:Core/Src/adc.c ****     float ib_raw = (float)avg_ib_raw * ADC_TO_VOLT * GAIN_CURRENT - OFFSET_CURRENT_IB;
+ 266              		.loc 1 58 5 is_stmt 1 view .LVU89
+ 267              		.loc 1 58 38 is_stmt 0 view .LVU90
+ 268 00c4 66EEA46A 		vmul.f32	s13, s13, s9
+ 269              	.LVL25:
+ 270              		.loc 1 58 52 view .LVU91
+ 271 00c8 66EEA36A 		vmul.f32	s13, s13, s7
+ 272              		.loc 1 58 11 view .LVU92
+ 273 00cc 76EEC46A 		vsub.f32	s13, s13, s8
+ 274              	.LVL26:
+  59:Core/Src/adc.c ****     float vb_raw = (float)avg_vb_raw * ADC_TO_VOLT * GAIN_VOLTAGE + 0.6f; // Vb 的偏移稍有不�
+ 275              		.loc 1 59 5 is_stmt 1 view .LVU93
+ 276              		.loc 1 59 38 is_stmt 0 view .LVU94
+ 277 00d0 67EEA47A 		vmul.f32	s15, s15, s9
+ 278              	.LVL27:
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 7
+
+
+ 279              		.loc 1 59 52 view .LVU95
+ 280 00d4 67EE837A 		vmul.f32	s15, s15, s6
+ 281              		.loc 1 59 11 view .LVU96
+ 282 00d8 DFED654A 		vldr.32	s9, .L19+20
+ 283 00dc 77EEA47A 		vadd.f32	s15, s15, s9
+ 284              	.LVL28:
+  60:Core/Src/adc.c ****     // 2. 滤波器初始化 (防止第一次采样滤波导致数值缓慢爬升)
+  61:Core/Src/adc.c ****     if (is_first == 0) {
+ 285              		.loc 1 61 5 is_stmt 1 view .LVU97
+ 286              		.loc 1 61 18 is_stmt 0 view .LVU98
+ 287 00e0 644B     		ldr	r3, .L19+24
+ 288              	.LVL29:
+ 289              		.loc 1 61 18 view .LVU99
+ 290 00e2 1B78     		ldrb	r3, [r3]	@ zero_extendqisi2
+ 291              		.loc 1 61 8 view .LVU100
+ 292 00e4 8BB9     		cbnz	r3, .L7
+  62:Core/Src/adc.c ****         va_filter = va_raw;
+ 293              		.loc 1 62 9 is_stmt 1 view .LVU101
+ 294              		.loc 1 62 19 is_stmt 0 view .LVU102
+ 295 00e6 644B     		ldr	r3, .L19+28
+ 296 00e8 83ED006A 		vstr.32	s12, [r3]
+  63:Core/Src/adc.c ****         ia_filter = ia_raw;
+ 297              		.loc 1 63 9 is_stmt 1 view .LVU103
+ 298              		.loc 1 63 19 is_stmt 0 view .LVU104
+ 299 00ec 634B     		ldr	r3, .L19+32
+ 300 00ee C3ED005A 		vstr.32	s11, [r3]
+  64:Core/Src/adc.c ****         ir_filter = ir_raw;
+ 301              		.loc 1 64 9 is_stmt 1 view .LVU105
+ 302              		.loc 1 64 19 is_stmt 0 view .LVU106
+ 303 00f2 634B     		ldr	r3, .L19+36
+ 304 00f4 83ED007A 		vstr.32	s14, [r3]
+  65:Core/Src/adc.c ****         ib_filter = ib_raw;
+ 305              		.loc 1 65 9 is_stmt 1 view .LVU107
+ 306              		.loc 1 65 19 is_stmt 0 view .LVU108
+ 307 00f8 624B     		ldr	r3, .L19+40
+ 308 00fa C3ED006A 		vstr.32	s13, [r3]
+  66:Core/Src/adc.c ****         vb_filter = vb_raw;
+ 309              		.loc 1 66 9 is_stmt 1 view .LVU109
+ 310              		.loc 1 66 19 is_stmt 0 view .LVU110
+ 311 00fe 624B     		ldr	r3, .L19+44
+ 312 0100 C3ED007A 		vstr.32	s15, [r3]
+  67:Core/Src/adc.c ****         is_first = 1;
+ 313              		.loc 1 67 9 is_stmt 1 view .LVU111
+ 314              		.loc 1 67 18 is_stmt 0 view .LVU112
+ 315 0104 5B4B     		ldr	r3, .L19+24
+ 316 0106 0122     		movs	r2, #1
+ 317 0108 1A70     		strb	r2, [r3]
+ 318              	.L7:
+  68:Core/Src/adc.c ****     }
+  69:Core/Src/adc.c **** 
+  70:Core/Src/adc.c ****     // 3. 数字低通滤波 
+  71:Core/Src/adc.c ****     ia_filter = ia_filter * 0.9f + ia_raw * 0.1f; 
+ 319              		.loc 1 71 5 is_stmt 1 view .LVU113
+ 320              		.loc 1 71 27 is_stmt 0 view .LVU114
+ 321 010a 5C4B     		ldr	r3, .L19+32
+ 322 010c D3ED004A 		vldr.32	s9, [r3]
+ 323 0110 DFED5E3A 		vldr.32	s7, .L19+48
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 8
+
+
+ 324 0114 64EEA34A 		vmul.f32	s9, s9, s7
+ 325              		.loc 1 71 43 view .LVU115
+ 326 0118 9FED5D4A 		vldr.32	s8, .L19+52
+ 327 011c 65EE845A 		vmul.f32	s11, s11, s8
+ 328              	.LVL30:
+ 329              		.loc 1 71 34 view .LVU116
+ 330 0120 74EEA54A 		vadd.f32	s9, s9, s11
+ 331              		.loc 1 71 15 view .LVU117
+ 332 0124 C3ED004A 		vstr.32	s9, [r3]
+  72:Core/Src/adc.c ****    // if (ia_filter < 0.0f) ia_filter = 0.0f;       
+  73:Core/Src/adc.c **** 
+  74:Core/Src/adc.c ****     va_filter = va_filter * 0.9f + va_raw * 0.1f;
+ 333              		.loc 1 74 5 is_stmt 1 view .LVU118
+ 334              		.loc 1 74 27 is_stmt 0 view .LVU119
+ 335 0128 534B     		ldr	r3, .L19+28
+ 336 012a D3ED005A 		vldr.32	s11, [r3]
+ 337 012e 65EEA35A 		vmul.f32	s11, s11, s7
+ 338              		.loc 1 74 43 view .LVU120
+ 339 0132 26EE046A 		vmul.f32	s12, s12, s8
+ 340              	.LVL31:
+ 341              		.loc 1 74 34 view .LVU121
+ 342 0136 75EE865A 		vadd.f32	s11, s11, s12
+ 343              		.loc 1 74 15 view .LVU122
+ 344 013a C3ED005A 		vstr.32	s11, [r3]
+  75:Core/Src/adc.c **** 
+  76:Core/Src/adc.c ****     ib_filter = ib_filter * 0.9f + ib_raw * 0.1f;
+ 345              		.loc 1 76 5 is_stmt 1 view .LVU123
+ 346              		.loc 1 76 27 is_stmt 0 view .LVU124
+ 347 013e 514B     		ldr	r3, .L19+40
+ 348 0140 93ED006A 		vldr.32	s12, [r3]
+ 349 0144 26EE236A 		vmul.f32	s12, s12, s7
+ 350              		.loc 1 76 43 view .LVU125
+ 351 0148 66EE846A 		vmul.f32	s13, s13, s8
+ 352              	.LVL32:
+ 353              		.loc 1 76 34 view .LVU126
+ 354 014c 76EE266A 		vadd.f32	s13, s12, s13
+ 355              		.loc 1 76 15 view .LVU127
+ 356 0150 C3ED006A 		vstr.32	s13, [r3]
+  77:Core/Src/adc.c ****    // if (ib_filter < 0.0f) ib_filter = 0.0f;
+  78:Core/Src/adc.c **** 
+  79:Core/Src/adc.c ****     ir_filter = ir_filter * 0.9f + ir_raw * 0.1f;
+ 357              		.loc 1 79 5 is_stmt 1 view .LVU128
+ 358              		.loc 1 79 27 is_stmt 0 view .LVU129
+ 359 0154 4A4B     		ldr	r3, .L19+36
+ 360 0156 93ED006A 		vldr.32	s12, [r3]
+ 361 015a 26EE236A 		vmul.f32	s12, s12, s7
+ 362              		.loc 1 79 43 view .LVU130
+ 363 015e 27EE047A 		vmul.f32	s14, s14, s8
+ 364              	.LVL33:
+ 365              		.loc 1 79 34 view .LVU131
+ 366 0162 36EE077A 		vadd.f32	s14, s12, s14
+ 367              		.loc 1 79 15 view .LVU132
+ 368 0166 83ED007A 		vstr.32	s14, [r3]
+  80:Core/Src/adc.c ****    // if (ir_filter < 0.0f) ir_filter = 0.0f;
+  81:Core/Src/adc.c ****     vb_filter = vb_filter * 0.9f + vb_raw * 0.1f;
+ 369              		.loc 1 81 5 is_stmt 1 view .LVU133
+ 370              		.loc 1 81 27 is_stmt 0 view .LVU134
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 9
+
+
+ 371 016a 474B     		ldr	r3, .L19+44
+ 372 016c 93ED006A 		vldr.32	s12, [r3]
+ 373 0170 26EE236A 		vmul.f32	s12, s12, s7
+ 374              		.loc 1 81 43 view .LVU135
+ 375 0174 67EE847A 		vmul.f32	s15, s15, s8
+ 376              	.LVL34:
+ 377              		.loc 1 81 34 view .LVU136
+ 378 0178 76EE277A 		vadd.f32	s15, s12, s15
+ 379              		.loc 1 81 15 view .LVU137
+ 380 017c C3ED007A 		vstr.32	s15, [r3]
+  82:Core/Src/adc.c ****     g_ctrl.ia = ia_filter;
+ 381              		.loc 1 82 5 is_stmt 1 view .LVU138
+ 382              		.loc 1 82 15 is_stmt 0 view .LVU139
+ 383 0180 444B     		ldr	r3, .L19+56
+ 384 0182 C3ED034A 		vstr.32	s9, [r3, #12]
+  83:Core/Src/adc.c ****     g_ctrl.va = va_filter;
+ 385              		.loc 1 83 5 is_stmt 1 view .LVU140
+ 386              		.loc 1 83 15 is_stmt 0 view .LVU141
+ 387 0186 C3ED005A 		vstr.32	s11, [r3]
+  84:Core/Src/adc.c ****     if (g_ctrl.va < 1.0f) g_ctrl.va = 0.0f; 
+ 388              		.loc 1 84 5 is_stmt 1 view .LVU142
+ 389              		.loc 1 84 15 is_stmt 0 view .LVU143
+ 390 018a D3ED005A 		vldr.32	s11, [r3]
+ 391              		.loc 1 84 8 view .LVU144
+ 392 018e B7EE006A 		vmov.f32	s12, #1.0e+0
+ 393 0192 F4EEC65A 		vcmpe.f32	s11, s12
+ 394 0196 F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 395 019a 28D4     		bmi	.L17
+ 396              	.L8:
+  85:Core/Src/adc.c ****     g_ctrl.vb = vb_filter;
+ 397              		.loc 1 85 5 is_stmt 1 view .LVU145
+ 398              		.loc 1 85 15 is_stmt 0 view .LVU146
+ 399 019c 3D4B     		ldr	r3, .L19+56
+ 400 019e C3ED017A 		vstr.32	s15, [r3, #4]
+  86:Core/Src/adc.c ****     g_ctrl.ir = ir_filter;
+ 401              		.loc 1 86 5 is_stmt 1 view .LVU147
+ 402              		.loc 1 86 15 is_stmt 0 view .LVU148
+ 403 01a2 83ED027A 		vstr.32	s14, [r3, #8]
+  87:Core/Src/adc.c ****     g_ctrl.ib = ib_filter;
+ 404              		.loc 1 87 5 is_stmt 1 view .LVU149
+ 405              		.loc 1 87 15 is_stmt 0 view .LVU150
+ 406 01a6 C3ED046A 		vstr.32	s13, [r3, #16]
+  88:Core/Src/adc.c ****     // 4. 温度计算 (降频处理，没必要每个 PWM 周期都算)
+  89:Core/Src/adc.c ****     static uint16_t task_div = 0;
+ 407              		.loc 1 89 5 is_stmt 1 view .LVU151
+  90:Core/Src/adc.c ****     if (++task_div >= 20000) 
+ 408              		.loc 1 90 5 view .LVU152
+ 409              		.loc 1 90 9 is_stmt 0 view .LVU153
+ 410 01aa 3B4A     		ldr	r2, .L19+60
+ 411 01ac 1388     		ldrh	r3, [r2]
+ 412 01ae 0133     		adds	r3, r3, #1
+ 413 01b0 9BB2     		uxth	r3, r3
+ 414              		.loc 1 90 8 view .LVU154
+ 415 01b2 1380     		strh	r3, [r2]	@ movhi
+ 416 01b4 44F61F62 		movw	r2, #19999
+ 417 01b8 9342     		cmp	r3, r2
+ 418 01ba 16D9     		bls	.L4
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 10
+
+
+ 419              	.LBB5:
+  91:Core/Src/adc.c ****   {
+  92:Core/Src/adc.c ****       task_div = 0;
+ 420              		.loc 1 92 7 is_stmt 1 view .LVU155
+ 421              		.loc 1 92 16 is_stmt 0 view .LVU156
+ 422 01bc 364B     		ldr	r3, .L19+60
+ 423 01be 0022     		movs	r2, #0
+ 424 01c0 1A80     		strh	r2, [r3]	@ movhi
+  93:Core/Src/adc.c ****         float r_ntc = 10000.0f * avg_ntc_raw / (4096.0f - avg_ntc_raw);
+ 425              		.loc 1 93 9 is_stmt 1 view .LVU157
+ 426              		.loc 1 93 32 is_stmt 0 view .LVU158
+ 427 01c2 9FED367A 		vldr.32	s14, .L19+64
+ 428 01c6 25EE077A 		vmul.f32	s14, s10, s14
+ 429              		.loc 1 93 57 view .LVU159
+ 430 01ca DFED357A 		vldr.32	s15, .L19+68
+ 431 01ce 77EEC57A 		vsub.f32	s15, s15, s10
+ 432              		.loc 1 93 15 view .LVU160
+ 433 01d2 C7EE276A 		vdiv.f32	s13, s14, s15
+ 434              	.LVL35:
+  94:Core/Src/adc.c ****         if(r_ntc > 0) {
+ 435              		.loc 1 94 9 is_stmt 1 view .LVU161
+ 436              		.loc 1 94 11 is_stmt 0 view .LVU162
+ 437 01d6 F5EEC06A 		vcmpe.f32	s13, #0
+ 438 01da F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 439 01de 09DC     		bgt	.L18
+ 440              	.LVL36:
+ 441              	.L11:
+  95:Core/Src/adc.c ****             float ln_r = logf(r_ntc / 10000.0f);
+  96:Core/Src/adc.c ****             float tem_raw = 1.0f / ((1.0f / 298.15f) + (ln_r / 3950.0f)) - 273.15f;
+  97:Core/Src/adc.c ****             if (tem_filter == 0.0f) tem_filter = tem_raw;
+  98:Core/Src/adc.c ****             tem_filter = tem_filter * 0.2f + tem_raw * 0.8f;
+  99:Core/Src/adc.c ****             g_ctrl.tem = tem_filter;
+ 100:Core/Src/adc.c ****         }
+ 101:Core/Src/adc.c ****         // 可以在这里翻转 LED 验证中断是否运行
+ 102:Core/Src/adc.c ****          HAL_GPIO_TogglePin(GPIOB, GPIO_PIN_14); 
+ 442              		.loc 1 102 10 is_stmt 1 view .LVU163
+ 443 01e0 4FF48041 		mov	r1, #16384
+ 444 01e4 2F48     		ldr	r0, .L19+72
+ 445 01e6 FFF7FEFF 		bl	HAL_GPIO_TogglePin
+ 446              	.LVL37:
+ 447              	.L4:
+ 448              		.loc 1 102 10 is_stmt 0 view .LVU164
+ 449              	.LBE5:
+ 103:Core/Src/adc.c ****     }
+ 104:Core/Src/adc.c ****         
+ 105:Core/Src/adc.c **** }...
+ 450              		.loc 1 105 1 view .LVU165
+ 451 01ea BDE8F081 		pop	{r4, r5, r6, r7, r8, pc}
+ 452              	.LVL38:
+ 453              	.L17:
+  84:Core/Src/adc.c ****     if (g_ctrl.va < 1.0f) g_ctrl.va = 0.0f; 
+ 454              		.loc 1 84 27 is_stmt 1 discriminator 1 view .LVU166
+  84:Core/Src/adc.c ****     if (g_ctrl.va < 1.0f) g_ctrl.va = 0.0f; 
+ 455              		.loc 1 84 37 is_stmt 0 discriminator 1 view .LVU167
+ 456 01ee 0022     		movs	r2, #0
+ 457 01f0 1A60     		str	r2, [r3]	@ float
+ 458 01f2 D3E7     		b	.L8
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 11
+
+
+ 459              	.LVL39:
+ 460              	.L18:
+ 461              	.LBB7:
+ 462              	.LBB6:
+  95:Core/Src/adc.c ****             float ln_r = logf(r_ntc / 10000.0f);
+ 463              		.loc 1 95 13 is_stmt 1 view .LVU168
+  95:Core/Src/adc.c ****             float ln_r = logf(r_ntc / 10000.0f);
+ 464              		.loc 1 95 26 is_stmt 0 view .LVU169
+ 465 01f4 9FED290A 		vldr.32	s0, .L19+64
+ 466 01f8 86EE800A 		vdiv.f32	s0, s13, s0
+ 467 01fc FFF7FEFF 		bl	logf
+ 468              	.LVL40:
+  96:Core/Src/adc.c ****             float tem_raw = 1.0f / ((1.0f / 298.15f) + (ln_r / 3950.0f)) - 273.15f;
+ 469              		.loc 1 96 13 is_stmt 1 view .LVU170
+  96:Core/Src/adc.c ****             float tem_raw = 1.0f / ((1.0f / 298.15f) + (ln_r / 3950.0f)) - 273.15f;
+ 470              		.loc 1 96 62 is_stmt 0 view .LVU171
+ 471 0200 9FED297A 		vldr.32	s14, .L19+76
+ 472 0204 C0EE077A 		vdiv.f32	s15, s0, s14
+  96:Core/Src/adc.c ****             float tem_raw = 1.0f / ((1.0f / 298.15f) + (ln_r / 3950.0f)) - 273.15f;
+ 473              		.loc 1 96 54 view .LVU172
+ 474 0208 9FED287A 		vldr.32	s14, .L19+80
+ 475 020c 77EE877A 		vadd.f32	s15, s15, s14
+  96:Core/Src/adc.c ****             float tem_raw = 1.0f / ((1.0f / 298.15f) + (ln_r / 3950.0f)) - 273.15f;
+ 476              		.loc 1 96 34 view .LVU173
+ 477 0210 F7EE006A 		vmov.f32	s13, #1.0e+0
+ 478 0214 86EEA77A 		vdiv.f32	s14, s13, s15
+  96:Core/Src/adc.c ****             float tem_raw = 1.0f / ((1.0f / 298.15f) + (ln_r / 3950.0f)) - 273.15f;
+ 479              		.loc 1 96 19 view .LVU174
+ 480 0218 DFED257A 		vldr.32	s15, .L19+84
+ 481 021c 37EE677A 		vsub.f32	s14, s14, s15
+ 482              	.LVL41:
+  97:Core/Src/adc.c ****             if (tem_filter == 0.0f) tem_filter = tem_raw;
+ 483              		.loc 1 97 13 is_stmt 1 view .LVU175
+  97:Core/Src/adc.c ****             if (tem_filter == 0.0f) tem_filter = tem_raw;
+ 484              		.loc 1 97 28 is_stmt 0 view .LVU176
+ 485 0220 244B     		ldr	r3, .L19+88
+ 486 0222 D3ED007A 		vldr.32	s15, [r3]
+  97:Core/Src/adc.c ****             if (tem_filter == 0.0f) tem_filter = tem_raw;
+ 487              		.loc 1 97 16 view .LVU177
+ 488 0226 F5EE407A 		vcmp.f32	s15, #0
+ 489 022a F1EE10FA 		vmrs	APSR_nzcv, FPSCR
+ 490 022e 01D1     		bne	.L13
+  97:Core/Src/adc.c ****             if (tem_filter == 0.0f) tem_filter = tem_raw;
+ 491              		.loc 1 97 37 is_stmt 1 discriminator 1 view .LVU178
+  97:Core/Src/adc.c ****             if (tem_filter == 0.0f) tem_filter = tem_raw;
+ 492              		.loc 1 97 48 is_stmt 0 discriminator 1 view .LVU179
+ 493 0230 83ED007A 		vstr.32	s14, [r3]
+ 494              	.L13:
+  98:Core/Src/adc.c ****             tem_filter = tem_filter * 0.2f + tem_raw * 0.8f;
+ 495              		.loc 1 98 13 is_stmt 1 view .LVU180
+  98:Core/Src/adc.c ****             tem_filter = tem_filter * 0.2f + tem_raw * 0.8f;
+ 496              		.loc 1 98 37 is_stmt 0 view .LVU181
+ 497 0234 1F4B     		ldr	r3, .L19+88
+ 498 0236 D3ED007A 		vldr.32	s15, [r3]
+ 499 023a DFED1F6A 		vldr.32	s13, .L19+92
+ 500 023e 67EEA67A 		vmul.f32	s15, s15, s13
+  98:Core/Src/adc.c ****             tem_filter = tem_filter * 0.2f + tem_raw * 0.8f;
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 12
+
+
+ 501              		.loc 1 98 54 view .LVU182
+ 502 0242 DFED1E6A 		vldr.32	s13, .L19+96
+ 503 0246 27EE267A 		vmul.f32	s14, s14, s13
+ 504              	.LVL42:
+  98:Core/Src/adc.c ****             tem_filter = tem_filter * 0.2f + tem_raw * 0.8f;
+ 505              		.loc 1 98 44 view .LVU183
+ 506 024a 77EE877A 		vadd.f32	s15, s15, s14
+  98:Core/Src/adc.c ****             tem_filter = tem_filter * 0.2f + tem_raw * 0.8f;
+ 507              		.loc 1 98 24 view .LVU184
+ 508 024e C3ED007A 		vstr.32	s15, [r3]
+  99:Core/Src/adc.c ****             g_ctrl.tem = tem_filter;
+ 509              		.loc 1 99 13 is_stmt 1 view .LVU185
+  99:Core/Src/adc.c ****             g_ctrl.tem = tem_filter;
+ 510              		.loc 1 99 24 is_stmt 0 view .LVU186
+ 511 0252 104B     		ldr	r3, .L19+56
+ 512 0254 C3ED057A 		vstr.32	s15, [r3, #20]
+ 513 0258 C2E7     		b	.L11
+ 514              	.L20:
+ 515 025a 00BF     		.align	2
+ 516              	.L19:
+ 517 025c 00000000 		.word	adc_buffer1
+ 518 0260 00000000 		.word	adc_buffer2
+ 519 0264 3333533A 		.word	978531123
+ 520 0268 9A992141 		.word	1092721050
+ 521 026c 9A992042 		.word	1109432730
+ 522 0270 9A99193F 		.word	1058642330
+ 523 0274 00000000 		.word	is_first
+ 524 0278 00000000 		.word	va_filter
+ 525 027c 00000000 		.word	ia_filter
+ 526 0280 00000000 		.word	ir_filter
+ 527 0284 00000000 		.word	ib_filter
+ 528 0288 00000000 		.word	vb_filter
+ 529 028c 6666663F 		.word	1063675494
+ 530 0290 CDCCCC3D 		.word	1036831949
+ 531 0294 00000000 		.word	g_ctrl
+ 532 0298 00000000 		.word	task_div.0
+ 533 029c 00401C46 		.word	1176256512
+ 534 02a0 00008045 		.word	1166016512
+ 535 02a4 00040048 		.word	1207960576
+ 536 02a8 00E07645 		.word	1165418496
+ 537 02ac 0FCF5B3B 		.word	995872527
+ 538 02b0 33938843 		.word	1133024051
+ 539 02b4 00000000 		.word	tem_filter
+ 540 02b8 CDCC4C3E 		.word	1045220557
+ 541 02bc CDCC4C3F 		.word	1061997773
+ 542              	.LBE6:
+ 543              	.LBE7:
+ 544              		.cfi_endproc
+ 545              	.LFE124:
+ 547              		.section	.bss.task_div.0,"aw",%nobits
+ 548              		.align	1
+ 551              	task_div.0:
+ 552 0000 0000     		.space	2
+ 553              		.section	.bss.is_first,"aw",%nobits
+ 556              	is_first:
+ 557 0000 00       		.space	1
+ 558              		.section	.bss.tem_filter,"aw",%nobits
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 13
+
+
+ 559              		.align	2
+ 562              	tem_filter:
+ 563 0000 00000000 		.space	4
+ 564              		.section	.bss.vb_filter,"aw",%nobits
+ 565              		.align	2
+ 568              	vb_filter:
+ 569 0000 00000000 		.space	4
+ 570              		.section	.bss.ib_filter,"aw",%nobits
+ 571              		.align	2
+ 574              	ib_filter:
+ 575 0000 00000000 		.space	4
+ 576              		.section	.bss.ir_filter,"aw",%nobits
+ 577              		.align	2
+ 580              	ir_filter:
+ 581 0000 00000000 		.space	4
+ 582              		.section	.bss.ia_filter,"aw",%nobits
+ 583              		.align	2
+ 586              	ia_filter:
+ 587 0000 00000000 		.space	4
+ 588              		.section	.bss.va_filter,"aw",%nobits
+ 589              		.align	2
+ 592              	va_filter:
+ 593 0000 00000000 		.space	4
+ 594              		.text
+ 595              	.Letext0:
+ 596              		.file 2 "C:/msys64/ucrt64/arm-none-eabi/include/machine/_default_types.h"
+ 597              		.file 3 "C:/msys64/ucrt64/arm-none-eabi/include/sys/_stdint.h"
+ 598              		.file 4 "Core/Inc/adc.h"
+ 599              		.file 5 "Core/Inc/power.h"
+ 600              		.file 6 "Drivers/CMSIS/Device/ST/STM32F3xx/Include/stm32f334x8.h"
+ 601              		.file 7 "Drivers/STM32F3xx_HAL_Driver/Inc/stm32f3xx_hal_gpio.h"
+ 602              		.file 8 "C:/msys64/ucrt64/arm-none-eabi/include/math.h"
+ARM GAS  C:\msys64\tmp\ccLdv3Yw.s 			page 14
+
+
+DEFINED SYMBOLS
+                            *ABS*:00000000 adc.c
+C:\msys64\tmp\ccLdv3Yw.s:21     .text.Sensor_Init:00000000 $t
+C:\msys64\tmp\ccLdv3Yw.s:27     .text.Sensor_Init:00000000 Sensor_Init
+C:\msys64\tmp\ccLdv3Yw.s:69     .text.Sensor_Init:00000024 $d
+C:\msys64\tmp\ccLdv3Yw.s:556    .bss.is_first:00000000 is_first
+C:\msys64\tmp\ccLdv3Yw.s:592    .bss.va_filter:00000000 va_filter
+C:\msys64\tmp\ccLdv3Yw.s:586    .bss.ia_filter:00000000 ia_filter
+C:\msys64\tmp\ccLdv3Yw.s:580    .bss.ir_filter:00000000 ir_filter
+C:\msys64\tmp\ccLdv3Yw.s:574    .bss.ib_filter:00000000 ib_filter
+C:\msys64\tmp\ccLdv3Yw.s:568    .bss.vb_filter:00000000 vb_filter
+C:\msys64\tmp\ccLdv3Yw.s:562    .bss.tem_filter:00000000 tem_filter
+C:\msys64\tmp\ccLdv3Yw.s:80     .text.Sensor_Update:00000000 $t
+C:\msys64\tmp\ccLdv3Yw.s:86     .text.Sensor_Update:00000000 Sensor_Update
+C:\msys64\tmp\ccLdv3Yw.s:517    .text.Sensor_Update:0000025c $d
+C:\msys64\tmp\ccLdv3Yw.s:551    .bss.task_div.0:00000000 task_div.0
+C:\msys64\tmp\ccLdv3Yw.s:548    .bss.task_div.0:00000000 $d
+C:\msys64\tmp\ccLdv3Yw.s:557    .bss.is_first:00000000 $d
+C:\msys64\tmp\ccLdv3Yw.s:559    .bss.tem_filter:00000000 $d
+C:\msys64\tmp\ccLdv3Yw.s:565    .bss.vb_filter:00000000 $d
+C:\msys64\tmp\ccLdv3Yw.s:571    .bss.ib_filter:00000000 $d
+C:\msys64\tmp\ccLdv3Yw.s:577    .bss.ir_filter:00000000 $d
+C:\msys64\tmp\ccLdv3Yw.s:583    .bss.ia_filter:00000000 $d
+C:\msys64\tmp\ccLdv3Yw.s:589    .bss.va_filter:00000000 $d
+
+UNDEFINED SYMBOLS
+HAL_GPIO_TogglePin
+logf
+adc_buffer1
+adc_buffer2
+g_ctrl
